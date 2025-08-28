@@ -108,18 +108,25 @@ function App() {
     }
   };
 
+  const renameChat = (chatId, newTitle) => {
+    setChats(prev => prev.map(chat => 
+      chat.id === chatId ? { ...chat, title: newTitle } : chat
+    ));
+  };
+
       return (
       <div className="flex h-screen bg-policypal-gray">
         {/* Sidebar */}
-        <Sidebar
-          chats={chats}
-          currentChatId={currentChatId}
-          onChatSelect={setCurrentChatId}
-          onCreateNewChat={createNewChat}
-          onDeleteChat={deleteChat}
-          isOpen={sidebarOpen}
-          onToggle={() => setSidebarOpen(!sidebarOpen)}
-        />
+               <Sidebar
+         chats={chats}
+         currentChatId={currentChatId}
+         onChatSelect={setCurrentChatId}
+         onCreateNewChat={createNewChat}
+         onDeleteChat={deleteChat}
+         onRenameChat={renameChat}
+         isOpen={sidebarOpen}
+         onToggle={() => setSidebarOpen(!sidebarOpen)}
+       />
 
         {/* Main Chat Area */}
         <div className="flex-1 flex flex-col">

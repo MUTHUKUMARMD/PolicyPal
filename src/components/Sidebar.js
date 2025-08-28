@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, MessageSquare, Trash2, Settings, User } from 'lucide-react';
+import { Plus, MessageSquare, Trash2, Settings, User, Edit2, Check, X } from 'lucide-react';
 
 const Sidebar = ({ 
   chats, 
@@ -7,10 +7,13 @@ const Sidebar = ({
   onChatSelect, 
   onCreateNewChat, 
   onDeleteChat, 
+  onRenameChat,
   isOpen, 
   onToggle 
 }) => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
+  const [editingChatId, setEditingChatId] = useState(null);
+  const [editTitle, setEditTitle] = useState('');
 
   const handleDeleteChat = (chatId, e) => {
     e.stopPropagation();
@@ -33,6 +36,34 @@ const Sidebar = ({
       return date.toLocaleDateString([], { weekday: 'short' });
     } else {
       return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+    }
+  };
+
+  const handleEditChat = (chatId, currentTitle, e) => {
+    e.stopPropagation();
+    setEditingChatId(chatId);
+    setEditTitle(currentTitle);
+  };
+
+  const handleSaveEdit = (chatId) => {
+    if (editTitle.trim()) {
+      onRenameChat(chatId, editTitle.trim());
+    }
+    setEditingChatId(null);
+    setEditTitle('');
+  };
+
+  const handleCancelEdit = () => {
+    setEditingChatId(null);
+    setEditTitle('');
+  };
+
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleSaveEdit(editingChatId);
+    } else if (e.key === 'Escape') {
+      handleCancelEdit();
     }
   };
 
@@ -81,27 +112,67 @@ const Sidebar = ({
                 >
                   <MessageSquare className="w-4 h-4 flex-shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <div className="truncate text-sm font-medium">
-                      {chat.title}
-                    </div>
-                    {chat.messages.length > 0 && (
-                      <div className="text-xs text-gray-400 truncate">
-                        {formatTime(chat.messages[chat.messages.length - 1].timestamp)}
+                    {editingChatId === chat.id ? (
+                      <div className="flex items-center gap-1">
+                        <input
+                          type="text"
+                          value={editTitle}
+                          onChange={(e) => setEditTitle(e.target.value)}
+                          onKeyDown={handleKeyPress}
+                          className="flex-1 bg-policypal-light border border-policypal-border rounded px-2 py-1 text-sm text-white focus:outline-none focus:border-policypal-blue"
+                          autoFocus
+                        />
+                        <button
+                          onClick={() => handleSaveEdit(chat.id)}
+                          className="p-1 hover:bg-green-600 rounded transition-colors"
+                          title="Save"
+                        >
+                          <Check className="w-3 h-3 text-green-400" />
+                        </button>
+                        <button
+                          onClick={handleCancelEdit}
+                          className="p-1 hover:bg-red-600 rounded transition-colors"
+                          title="Cancel"
+                        >
+                          <X className="w-3 h-3 text-red-400" />
+                        </button>
                       </div>
+                    ) : (
+                      <>
+                        <div className="truncate text-sm font-medium">
+                          {chat.title}
+                        </div>
+                        {chat.messages.length > 0 && (
+                          <div className="text-xs text-gray-400 truncate">
+                            {formatTime(chat.messages[chat.messages.length - 1].timestamp)}
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
                   
-                  {/* Delete Button */}
-                  <button
-                    onClick={(e) => handleDeleteChat(chat.id, e)}
-                    className={`
-                      opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-600 transition-all
-                      ${showDeleteConfirm === chat.id ? 'opacity-100 bg-red-600' : ''}
-                    `}
-                    title="Delete chat"
-                  >
-                    <Trash2 className="w-3 h-3" />
-                  </button>
+                                     {/* Action Buttons */}
+                   <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                     {editingChatId !== chat.id && (
+                       <button
+                         onClick={(e) => handleEditChat(chat.id, chat.title, e)}
+                         className="p-1 rounded hover:bg-blue-600 transition-colors"
+                         title="Rename chat"
+                       >
+                         <Edit2 className="w-3 h-3 text-blue-400" />
+                       </button>
+                     )}
+                     <button
+                       onClick={(e) => handleDeleteChat(chat.id, e)}
+                       className={`
+                         p-1 rounded hover:bg-red-600 transition-all
+                         ${showDeleteConfirm === chat.id ? 'bg-red-600' : ''}
+                       `}
+                       title="Delete chat"
+                     >
+                       <Trash2 className="w-3 h-3" />
+                     </button>
+                   </div>
                 </div>
               ))}
             </div>
