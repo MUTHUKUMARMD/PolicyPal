@@ -30,34 +30,94 @@ The interface includes:
 
 - Node.js (version 14 or higher)
 - npm or yarn package manager
+- Python 3.7 or higher
+- OpenAI API key
 
 ### Installation
 
-1. **Clone or download the project files**
+#### Frontend Setup
 
-2. **Install dependencies**
+1. **Install frontend dependencies**
    ```bash
    npm install
    ```
 
-3. **Start the development server**
+2. **Start the React development server**
    ```bash
    npm start
    ```
 
-4. **Open your browser**
+3. **Open your browser**
    Navigate to `http://localhost:3000` to view the application
+
+#### Backend Setup
+
+1. **Navigate to backend directory**
+   ```bash
+   cd backend
+   ```
+
+2. **Install Python dependencies**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+3. **Set up environment variables**
+   ```bash
+   cp env.example .env
+   ```
+   
+   Edit `.env` and add your OpenAI API key:
+   ```
+   OPENAI_API_KEY=your_actual_openai_api_key_here
+   ```
+
+4. **Get OpenAI API Key**
+   - Go to [OpenAI Platform](https://platform.openai.com/)
+   - Sign up or log in
+   - Navigate to API Keys section
+   - Create a new API key
+   - Copy the key to your `.env` file
+
+5. **Start the Flask backend server**
+   ```bash
+   python app.py
+   ```
+   
+   The backend will start on `http://localhost:5000`
+
+### Running Both Servers
+
+You need both servers running simultaneously:
+
+**Terminal 1 (Frontend):**
+```bash
+npm start
+```
+
+**Terminal 2 (Backend):**
+```bash
+cd backend
+python app.py
+```
 
 ## Project Structure
 
 ```
-src/
-├── components/
-│   ├── Sidebar.js          # Chat history sidebar
-│   └── ChatArea.js         # Main chat display area
-├── App.js                  # Main application component
-├── index.js               # React entry point
-└── index.css              # Global styles and Tailwind imports
+├── src/                    # React frontend source code
+│   ├── components/
+│   │   ├── Sidebar.js      # Chat history sidebar
+│   │   └── ChatArea.js     # Main chat display area
+│   ├── App.js              # Main application component
+│   ├── index.js           # React entry point
+│   └── index.css          # Global styles and Tailwind imports
+├── backend/                # Flask backend server
+│   ├── app.py             # Main Flask application
+│   ├── requirements.txt   # Python dependencies
+│   ├── env.example        # Environment variables template
+│   └── README.md          # Backend documentation
+├── public/                 # Static assets
+└── package.json           # Frontend dependencies
 ```
 
 ## Key Components
@@ -89,17 +149,25 @@ The app uses Tailwind CSS with custom PolicyPal colors defined in `tailwind.conf
 - `policypal-blue`: Accent color for buttons and user messages
 
 ### AI Responses
-Currently uses simulated policy-focused responses. To integrate with a real AI API:
-1. Replace the `generateAIResponse` function in `App.js`
-2. Add your API key and endpoint
-3. Update the response handling logic
+The application now uses OpenAI's GPT-3.5-turbo model for intelligent policy responses. The backend handles:
+1. OpenAI API communication
+2. Error handling and rate limiting
+3. Policy-focused system prompts
+4. Response formatting and delivery
 
 ## Technologies Used
 
+### Frontend
 - **React 18** - Frontend framework
 - **Tailwind CSS** - Styling and responsive design
 - **Lucide React** - Icon library
 - **CSS Animations** - Smooth transitions and typing indicators
+
+### Backend
+- **Flask** - Python web framework
+- **OpenAI API** - GPT-3.5-turbo for AI responses
+- **Flask-CORS** - Cross-origin resource sharing
+- **Python-dotenv** - Environment variable management
 
 ## Browser Support
 

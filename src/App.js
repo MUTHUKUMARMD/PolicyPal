@@ -53,11 +53,12 @@ function App() {
     setInputMessage('');
     setIsLoading(true);
 
-    // Simulate AI response
-    setTimeout(() => {
+    // Get AI response from backend
+    try {
+      const aiResponse = await generateAIResponse(inputMessage);
       const aiMessage = {
         id: Date.now() + 1,
-        content: generateAIResponse(inputMessage),
+        content: aiResponse,
         role: 'assistant',
         timestamp: new Date().toISOString()
       };
@@ -67,26 +68,48 @@ function App() {
           ? { ...chat, messages: [...chat.messages, aiMessage] }
           : chat
       ));
+    } catch (error) {
+      console.error('Error getting AI response:', error);
+      const errorMessage = {
+        id: Date.now() + 1,
+        content: "I apologize, but I'm having trouble processing your request right now. Please try again later.",
+        role: 'assistant',
+        timestamp: new Date().toISOString()
+      };
 
+      setChats(prev => prev.map(chat => 
+        chat.id === currentChatId 
+          ? { ...chat, messages: [...chat.messages, errorMessage] }
+          : chat
+      ));
+    } finally {
       setIsLoading(false);
-    }, 1000 + Math.random() * 2000);
+    }
   };
 
-  const generateAIResponse = (userInput) => {
-    const responses = [
-      "Based on policy guidelines, I can help you understand the relevant regulations...",
-      "Let me analyze this policy question and provide you with the appropriate guidance.",
-      "This is an important policy consideration. Here's what the current framework suggests...",
-      "I understand your policy inquiry. Let me provide some insights based on best practices.",
-      "That's a great policy question! Let me break down the key considerations for you.",
-      "From a policy perspective, this involves several important factors to consider.",
-      "I can help you navigate this policy matter. Here's what you should know...",
-      "This policy question requires careful analysis. Let me share some relevant information.",
-      "I understand you're looking for policy guidance. Here's what I can tell you...",
-      "This is an interesting policy challenge. Let me provide some context and recommendations."
-    ];
-    
-    return responses[Math.floor(Math.random() * responses.length)];
+  const generateAIResponse = async (userInput) => {
+    try {
+      const response = await fetch('http://localhost:5000/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: userInput
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to get response from AI');
+      }
+
+      const data = await response.json();
+      return data.response;
+    } catch (error) {
+      console.error('Error calling AI API:', error);
+      return `I apologize, but I'm having trouble connecting to my AI service right now. Please try again later. Error: ${error.message}`;
+    }
   };
 
   const handleKeyPress = (e) => {
