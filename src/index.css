@@ -8,10 +8,34 @@
   box-sizing: border-box;
 }
 
+:root {
+  --background-primary: #343541;
+  --background-secondary: #444654;
+  --border-color: #565869;
+  --text-primary: #ececf1;
+  --text-secondary: #a9a9b3;
+}
+
+:root.light {
+  --background-primary: #ffffff;
+  --background-secondary: #f8f9fa;
+  --border-color: #e5e7eb;
+  --text-primary: #1f2937;
+  --text-secondary: #6b7280;
+}
+
+:root.dark {
+  --background-primary: #343541;
+  --background-secondary: #444654;
+  --border-color: #565869;
+  --text-primary: #ececf1;
+  --text-secondary: #a9a9b3;
+}
+
 body {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  background-color: #343541;
-  color: #ececf1;
+  background-color: var(--background-primary);
+  color: var(--text-primary);
   overflow: hidden;
 }
 

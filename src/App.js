@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import Sidebar from './components/Sidebar';
 import ChatArea from './components/ChatArea';
 import { Send } from 'lucide-react';
+import { ThemeProvider } from './context/ThemeContext';
 
 function App() {
   const [chats, setChats] = useState([
@@ -89,13 +90,19 @@ function App() {
 
   const generateAIResponse = async (userInput) => {
     try {
+      // Get user profile
+      const userId = localStorage.getItem('userId') || 'default';
+      const profileResponse = await fetch(`http://localhost:5000/api/profile/${userId}`);
+      const profile = await profileResponse.json();
+
       const response = await fetch('http://localhost:5000/api/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          message: userInput
+          message: userInput,
+          profile: profile // Include user profile in chat request
         })
       });
 
@@ -138,7 +145,8 @@ function App() {
   };
 
       return (
-      <div className="flex h-screen bg-policypal-gray">
+    <ThemeProvider>
+      <div className="flex h-screen" style={{ backgroundColor: 'var(--background-primary)' }}>
         {/* Sidebar */}
                <Sidebar
          chats={chats}
@@ -154,17 +162,8 @@ function App() {
         {/* Main Chat Area */}
         <div className="flex-1 flex flex-col">
           {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b border-policypal-border bg-policypal-dark">
-            <button
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="p-2 hover:bg-policypal-light rounded-md transition-colors"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-            </button>
+          <div className="flex items-center justify-center p-4 border-b border-policypal-border bg-policypal-dark">
             <h1 className="text-lg font-semibold">PolicyPal</h1>
-            <div className="w-10"></div>
           </div>
 
         {/* Chat Messages */}
@@ -201,6 +200,7 @@ function App() {
         </div>
       </div>
     </div>
+    </ThemeProvider>
   );
 }
 

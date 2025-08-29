@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { Plus, MessageSquare, Trash2, Settings, User, Edit2, Check, X } from 'lucide-react';
+import { Plus, MessageSquare, Trash2, Settings as SettingsIcon, User, Edit2, Check, X } from 'lucide-react';
+import Profile from './Profile';
+import SettingsModal from './Settings';
 
 const Sidebar = ({ 
   chats, 
@@ -11,6 +13,8 @@ const Sidebar = ({
   isOpen, 
   onToggle 
 }) => {
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
   const [editingChatId, setEditingChatId] = useState(null);
   const [editTitle, setEditTitle] = useState('');
@@ -78,11 +82,17 @@ const Sidebar = ({
       )}
 
       {/* Sidebar */}
-      <div className={`
-        fixed lg:static inset-y-0 left-0 z-50 w-80 bg-policypal-dark border-r border-policypal-border
-        transform transition-transform duration-300 ease-in-out
-        ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-      `}>
+      <div 
+        className={`
+          fixed lg:static inset-y-0 left-0 z-50 w-80 border-r
+          transform transition-transform duration-300 ease-in-out
+          ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+        `}
+        style={{ 
+          backgroundColor: 'var(--background-secondary)',
+          borderColor: 'var(--border-color)',
+          color: 'var(--text-primary)'
+        }}>
         <div className="flex flex-col h-full">
           {/* New Chat Button */}
           <div className="p-4 border-b border-policypal-border">
@@ -181,14 +191,20 @@ const Sidebar = ({
           {/* Bottom Section */}
                      <div className="p-4 border-t border-policypal-border">
             <div className="space-y-2">
-                             <button className="w-full flex items-center gap-3 p-3 text-left text-gray-300 hover:bg-policypal-light rounded-lg transition-colors">
-                 <User className="w-4 h-4" />
-                 <span className="text-sm">My Account</span>
-               </button>
-               <button className="w-full flex items-center gap-3 p-3 text-left text-gray-300 hover:bg-policypal-light rounded-lg transition-colors">
-                 <Settings className="w-4 h-4" />
-                 <span className="text-sm">Settings</span>
-               </button>
+              <button 
+                onClick={() => setIsProfileOpen(true)}
+                className="w-full flex items-center gap-3 p-3 text-left text-gray-300 hover:bg-policypal-light rounded-lg transition-colors"
+              >
+                <User className="w-4 h-4" />
+                <span className="text-sm">My Profile</span>
+              </button>
+              <button 
+                onClick={() => setIsSettingsOpen(true)}
+                className="w-full flex items-center gap-3 p-3 text-left text-gray-300 hover:bg-policypal-light rounded-lg transition-colors"
+              >
+                <SettingsIcon className="w-4 h-4" />
+                <span className="text-sm">Settings</span>
+              </button>
              </div>
              
              <div className="mt-4 pt-4 border-t border-policypal-border">
@@ -199,6 +215,11 @@ const Sidebar = ({
           </div>
         </div>
       </div>
+      {/* Profile Modal */}
+      <Profile isOpen={isProfileOpen} onClose={() => setIsProfileOpen(false)} />
+
+      {/* Settings Modal */}
+      <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
     </>
   );
 };

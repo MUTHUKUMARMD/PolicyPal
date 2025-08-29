@@ -45,12 +45,34 @@ def generate_fallback_response(user_message):
     else:
         return policy_responses[len(user_message) % len(policy_responses)]
 
-def get_ai_response(user_message):
+def get_ai_response(user_message, user_profile=None):
     """Get response from Gemini API with retry logic"""
     try:
-        system_prompt = """You are PolicyPal, an AI-powered policy assistant. You help users understand policies, 
-        regulations, compliance matters, and provide guidance on policy-related questions. Be professional, accurate, 
-        and helpful. Focus on policy, legal, and compliance topics.
+        profile_context = ""
+        if user_profile:
+            profile_context = f"""
+            User Profile Information:
+            - Age: {user_profile.get('age', 'Not specified')}
+            - Location: {user_profile.get('location', 'Not specified')}
+            - Employment Status: {user_profile.get('employment', 'Not specified')}
+            - Annual Income: {user_profile.get('income', 'Not specified')}
+            - Education Level: {user_profile.get('education', 'Not specified')}
+            - Family Size: {user_profile.get('familySize', 'Not specified')}
+            """
+
+        system_prompt = f"""You are PolicyPal, an AI-powered government scheme and policy assistant. You help users discover 
+        and understand various government schemes, benefits, and policies based on their profile and needs. 
+        Focus on suggesting relevant government schemes, financial aid, educational support, healthcare benefits, 
+        and other public welfare programs.
+
+        {profile_context}
+
+        Your task is to:
+        1. Understand the user's needs and circumstances
+        2. Suggest relevant government schemes and policies
+        3. Explain eligibility criteria and benefits
+        4. Provide application process information
+        5. Offer practical guidance on accessing these benefits
 
         User's question: """
         
@@ -76,17 +98,49 @@ def get_ai_response(user_message):
         logger.error(f"Error getting AI response: {e}")
         return generate_fallback_response(user_message)
 
+# In-memory storage for demo purposes. In production, use a proper database
+user_profiles = {}
+
+@app.route('/api/profile', methods=['POST'])
+def update_profile():
+    """Update user profile"""
+    try:
+        data = request.get_json()
+        user_id = data.get('userId')
+        profile_data = {
+            'age': data.get('age'),
+            'location': data.get('location'),
+            'employment': data.get('employment'),
+            'income': data.get('income'),
+            'education': data.get('education'),
+            'familySize': data.get('familySize')
+        }
+        user_profiles[user_id] = profile_data
+        return jsonify({'message': 'Profile updated successfully'})
+    except Exception as e:
+        logger.error(f"Error updating profile: {e}")
+        return jsonify({'error': 'Failed to update profile'}), 500
+
+@app.route('/api/profile/<user_id>', methods=['GET'])
+def get_profile(user_id):
+    """Get user profile"""
+    profile = user_profiles.get(user_id, {})
+    return jsonify(profile)
+
 @app.route('/api/chat', methods=['POST'])
 def chat():
     """Handle chat requests from frontend"""
     try:
         data = request.get_json()
         user_message = data.get('message', '')
+        user_id = data.get('userId', '')
         
         if not user_message:
             return jsonify({'error': 'Message is required'}), 400
 
-        ai_response = get_ai_response(user_message)
+        # Get user profile if available
+        user_profile = user_profiles.get(user_id)
+        ai_response = get_ai_response(user_message, user_profile)
         return jsonify({
             'response': ai_response,
             'model': 'gemini-1.5-flash'
