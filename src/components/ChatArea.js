@@ -31,6 +31,26 @@ const ChatArea = ({ messages, isLoading }) => {
     });
   };
 
+  const sendMessage = async (message) => {
+    const userId = localStorage.getItem('policypal_currentUser');
+    const profile = JSON.parse(localStorage.getItem('policypal_profile') || '{}');
+    try {
+      const response = await fetch('http://localhost:5000/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message,
+          userId,
+          profile
+        }),
+      });
+      const data = await response.json();
+      return data.response;
+    } catch (error) {
+      return 'Sorry, there was an error processing your request.';
+    }
+  };
+
   if (messages.length === 0 && !isLoading) {
     return (
       <div className="flex-1 flex items-center justify-center">

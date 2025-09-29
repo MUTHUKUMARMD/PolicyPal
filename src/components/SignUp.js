@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-const SignUp = ({ onSignUp, onSwitchToSignIn }) => {
+const SignUp = ({ onSignIn, onSwitchToSignIn }) => {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -12,32 +12,32 @@ const SignUp = ({ onSignUp, onSwitchToSignIn }) => {
     primaryNeeds: 'education',
     otherPrimaryNeeds: ''
   });
+
   const [error, setError] = useState('');
 
   const handleSubmit = (e) => {
     e.preventDefault();
     const users = JSON.parse(localStorage.getItem('policypal_users') || '[]');
-    
+
     if (users.some(user => user.email === formData.email)) {
       setError('Email already exists');
       return;
     }
 
     const newUser = {
+      id: Date.now().toString(),
       ...formData,
       occupation: formData.occupation === 'others' ? formData.otherOccupation : formData.occupation,
-      primaryNeeds: formData.primaryNeeds === 'others' ? formData.otherPrimaryNeeds : formData.primaryNeeds,
-      id: Date.now().toString()
+      primaryNeeds: formData.primaryNeeds === 'others' ? formData.otherPrimaryNeeds : formData.primaryNeeds
     };
 
     users.push(newUser);
     localStorage.setItem('policypal_users', JSON.stringify(users));
-    // Don't automatically log in after signup
-    onSwitchToSignIn(); // Redirect to sign in page instead
+    onSwitchToSignIn(); // Redirect to sign in after successful registration
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center py-8" style={{ backgroundColor: 'var(--background-primary)' }}>
+    <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--background-primary)' }}>
       <div className="max-w-md w-full mx-4 p-8 rounded-lg shadow-lg" style={{ backgroundColor: 'var(--background-secondary)' }}>
         <h2 className="text-2xl font-bold mb-6 text-center">Sign Up for PolicyPal</h2>
         
