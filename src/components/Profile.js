@@ -13,16 +13,18 @@ const Profile = ({ isOpen, onClose }) => {
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    // Load existing profile when component mounts
-    const userId = localStorage.getItem('userId') || 'default';
-    fetch(`http://localhost:5000/api/profile/${userId}`)
-      .then(res => res.json())
-      .then(data => {
-        if (Object.keys(data).length > 0) {
-          setProfile(data);
-        }
-      })
-      .catch(err => console.error('Error loading profile:', err));
+    // Load user profile from local storage
+    const currentUser = JSON.parse(localStorage.getItem('policypal_currentUser'));
+    if (currentUser) {
+      setProfile({
+        age: currentUser.age || '',
+        gender: currentUser.gender || '',
+        occupation: currentUser.occupation || '',
+        financialStatus: currentUser.financialStatus || '',
+        primaryNeeds: currentUser.primaryNeeds || '',
+        email: currentUser.email || ''
+      });
+    }
   }, []);
 
   const handleSubmit = async (e) => {
@@ -66,79 +68,45 @@ const Profile = ({ isOpen, onClose }) => {
 
         <form onSubmit={handleSubmit} className="p-4 space-y-4">
           <div className="space-y-2">
-            <label className="block text-sm">Age</label>
-            <input
-              type="number"
-              value={profile.age}
-              onChange={(e) => setProfile(prev => ({ ...prev, age: e.target.value }))}
-              className="w-full p-2 bg-policypal-light border border-policypal-border rounded"
-              placeholder="Enter your age"
-            />
+            <label className="block text-sm font-medium">Email</label>
+            <div className="w-full p-2 bg-policypal-light border border-policypal-border rounded text-gray-300">
+              {profile.email}
+            </div>
           </div>
 
           <div className="space-y-2">
-            <label className="block text-sm">Location</label>
-            <input
-              type="text"
-              value={profile.location}
-              onChange={(e) => setProfile(prev => ({ ...prev, location: e.target.value }))}
-              className="w-full p-2 bg-policypal-light border border-policypal-border rounded"
-              placeholder="Enter your location"
-            />
+            <label className="block text-sm font-medium">Age</label>
+            <div className="w-full p-2 bg-policypal-light border border-policypal-border rounded text-gray-300">
+              {profile.age}
+            </div>
           </div>
 
           <div className="space-y-2">
-            <label className="block text-sm">Employment Status</label>
-            <select
-              value={profile.employment}
-              onChange={(e) => setProfile(prev => ({ ...prev, employment: e.target.value }))}
-              className="w-full p-2 bg-policypal-light border border-policypal-border rounded"
-            >
-              <option value="">Select status</option>
-              <option value="employed">Employed</option>
-              <option value="unemployed">Unemployed</option>
-              <option value="student">Student</option>
-              <option value="retired">Retired</option>
-              <option value="self-employed">Self-employed</option>
-            </select>
+            <label className="block text-sm font-medium">Gender</label>
+            <div className="w-full p-2 bg-policypal-light border border-policypal-border rounded text-gray-300">
+              {profile.gender}
+            </div>
           </div>
 
           <div className="space-y-2">
-            <label className="block text-sm">Annual Income</label>
-            <input
-              type="text"
-              value={profile.income}
-              onChange={(e) => setProfile(prev => ({ ...prev, income: e.target.value }))}
-              className="w-full p-2 bg-policypal-light border border-policypal-border rounded"
-              placeholder="Enter your annual income"
-            />
+            <label className="block text-sm font-medium">Occupation</label>
+            <div className="w-full p-2 bg-policypal-light border border-policypal-border rounded text-gray-300">
+              {profile.occupation}
+            </div>
           </div>
 
           <div className="space-y-2">
-            <label className="block text-sm">Education Level</label>
-            <select
-              value={profile.education}
-              onChange={(e) => setProfile(prev => ({ ...prev, education: e.target.value }))}
-              className="w-full p-2 bg-policypal-light border border-policypal-border rounded"
-            >
-              <option value="">Select level</option>
-              <option value="high-school">High School</option>
-              <option value="bachelor">Bachelor's Degree</option>
-              <option value="master">Master's Degree</option>
-              <option value="phd">Ph.D.</option>
-              <option value="other">Other</option>
-            </select>
+            <label className="block text-sm font-medium">Financial Status</label>
+            <div className="w-full p-2 bg-policypal-light border border-policypal-border rounded text-gray-300">
+              {profile.financialStatus}
+            </div>
           </div>
 
           <div className="space-y-2">
-            <label className="block text-sm">Family Size</label>
-            <input
-              type="number"
-              value={profile.familySize}
-              onChange={(e) => setProfile(prev => ({ ...prev, familySize: e.target.value }))}
-              className="w-full p-2 bg-policypal-light border border-policypal-border rounded"
-              placeholder="Enter number of family members"
-            />
+            <label className="block text-sm font-medium">Primary Needs</label>
+            <div className="w-full p-2 bg-policypal-light border border-policypal-border rounded text-gray-300">
+              {profile.primaryNeeds}
+            </div>
           </div>
 
           <div className="flex justify-end gap-3 mt-6">
@@ -147,15 +115,7 @@ const Profile = ({ isOpen, onClose }) => {
               onClick={onClose}
               className="px-4 py-2 text-sm border border-policypal-border rounded hover:bg-policypal-light transition-colors"
             >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isSaving}
-              className="px-4 py-2 text-sm bg-policypal-blue hover:bg-blue-600 rounded flex items-center gap-2 transition-colors"
-            >
-              <Save className="w-4 h-4" />
-              {isSaving ? 'Saving...' : 'Save Profile'}
+              Close
             </button>
           </div>
         </form>

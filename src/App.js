@@ -1,27 +1,93 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import ChatArea from './components/ChatArea';
+import SignIn from './components/SignIn';
+import SignUp from './components/SignUp';
 import { Send } from 'lucide-react';
 import { ThemeProvider } from './context/ThemeContext';
 
 function App() {
-  const [chats, setChats] = useState([
-    {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [showSignUp, setShowSignUp] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [chats, setChats] = useState(() => {
+    const currentUser = JSON.parse(localStorage.getItem('policypal_currentUser'));
+    if (!currentUser) return [];
+    
+    const savedChats = localStorage.getItem(`policypal_chats_${currentUser.id}`);
+    return savedChats ? JSON.parse(savedChats) : [{
       id: 1,
       title: 'New Policy Chat',
       messages: []
-    }
-  ]);
+    }];
+  });
   const [currentChatId, setCurrentChatId] = useState(1);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
+  useEffect(() => {
+    const user = localStorage.getItem('policypal_currentUser');
+    if (user) {
+      const parsedUser = JSON.parse(user);
+      setCurrentUser(parsedUser);
+      setIsAuthenticated(true);
+      
+      // Load user's chats
+      const savedChats = localStorage.getItem(`policypal_chats_${parsedUser.id}`);
+      if (savedChats) {
+        setChats(JSON.parse(savedChats));
+      }
+    }
+  }, []);
+
+  // Save chats whenever they change
+  useEffect(() => {
+    if (currentUser && chats) {
+      localStorage.setItem(`policypal_chats_${currentUser.id}`, JSON.stringify(chats));
+    }
+  }, [chats, currentUser]);
+
+  const handleSignIn = (user) => {
+    setCurrentUser(user);
+    setIsAuthenticated(true);
+    
+    // Load user's chats
+    const savedChats = localStorage.getItem(`policypal_chats_${user.id}`);
+    if (savedChats) {
+      setChats(JSON.parse(savedChats));
+    } else {
+      setChats([{
+        id: 1,
+        title: 'New Policy Chat',
+        messages: []
+      }]);
+    }
+  };
+
+  const handleSignUp = (user) => {
+    setCurrentUser(user);
+    setIsAuthenticated(true);
+    setShowSignUp(false);
+  };
+
+  const handleSignOut = () => {
+    // Save chats one last time before signing out
+    if (currentUser) {
+      localStorage.setItem(`policypal_chats_${currentUser.id}`, JSON.stringify(chats));
+    }
+    
+    localStorage.removeItem('policypal_currentUser');
+    setCurrentUser(null);
+    setIsAuthenticated(false);
+    setChats([]);
+  };
+
   const currentChat = chats.find(chat => chat.id === currentChatId);
 
   const createNewChat = () => {
     const newChat = {
-      id: Date.now(),
+      id: `${currentUser.id}_${Date.now()}`,
       title: 'New Policy Chat',
       messages: []
     };
@@ -146,7 +212,20 @@ function App() {
 
       return (
     <ThemeProvider>
-      <div className="flex h-screen" style={{ backgroundColor: 'var(--background-primary)' }}>
+      {!isAuthenticated ? (
+        showSignUp ? (
+          <SignUp 
+            onSignUp={handleSignUp}
+            onSwitchToSignIn={() => setShowSignUp(false)}
+          />
+        ) : (
+          <SignIn 
+            onSignIn={handleSignIn}
+            onSwitchToSignUp={() => setShowSignUp(true)}
+          />
+        )
+      ) : (
+        <div className="flex h-screen" style={{ backgroundColor: 'var(--background-primary)' }}>
         {/* Sidebar */}
                <Sidebar
          chats={chats}
@@ -157,6 +236,7 @@ function App() {
          onRenameChat={renameChat}
          isOpen={sidebarOpen}
          onToggle={() => setSidebarOpen(!sidebarOpen)}
+         onSignOut={handleSignOut}
        />
 
         {/* Main Chat Area */}
@@ -200,6 +280,7 @@ function App() {
         </div>
       </div>
     </div>
+      )}
     </ThemeProvider>
   );
 }

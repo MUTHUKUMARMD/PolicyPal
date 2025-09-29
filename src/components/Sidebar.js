@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, MessageSquare, Trash2, Settings as SettingsIcon, User, Edit2, Check, X } from 'lucide-react';
+import { Plus, MessageSquare, Trash2, Settings as SettingsIcon, User, Edit2, Check, X, LogOut } from 'lucide-react';
 import Profile from './Profile';
 import SettingsModal from './Settings';
 
@@ -11,7 +11,8 @@ const Sidebar = ({
   onDeleteChat, 
   onRenameChat,
   isOpen, 
-  onToggle 
+  onToggle,
+  onSignOut
 }) => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -204,6 +205,13 @@ const Sidebar = ({
               >
                 <SettingsIcon className="w-4 h-4" />
                 <span className="text-sm">Settings</span>
+              </button>
+              <button 
+                onClick={onSignOut}
+                className="w-full flex items-center gap-3 p-3 mt-4 text-left text-red-400 hover:bg-red-500 hover:text-white border border-red-400 rounded-lg transition-colors"
+              >
+                <LogOut className="w-4 h-4" />
+                <span className="text-sm font-medium">Sign Out</span>
               </button>
              </div>
              
