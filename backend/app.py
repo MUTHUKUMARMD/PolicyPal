@@ -2,20 +2,24 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import google.generativeai as genai
 import time
-from dotenv import load_dotenv
 import logging
 import os
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 # Initialize Flask app
 app = Flask(__name__)
-CORS(app)  # Enable CORS for all routes
+CORS(app)
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Configure Gemini API
-genai.configure(api_key="AIzaSyBR99HbxdtTNSwPx4m2YkOuKe3zFmFxOdM")
+GEMINI_API_KEY = "AIzaSyD7b7jJcFsNWr4M-V99d3TMus73CJwiO2o"
+genai.configure(api_key=GEMINI_API_KEY)
 
 # Initialize Gemini model with generation config
 generation_config = {
@@ -33,89 +37,46 @@ safety_settings = [
 ]
 
 model = genai.GenerativeModel(
-    model_name="gemini-1.5-pro",
+    model_name="gemini-2.5-flash",
     generation_config=generation_config,
     safety_settings=safety_settings
 )
 
-def generate_fallback_response(user_message):
-    """Generate fallback responses when OpenAI quota is exceeded"""
-    policy_responses = [
-        "Based on policy guidelines, I can help you understand the relevant regulations. This appears to be a policy-related inquiry that requires careful consideration of current frameworks and compliance requirements.",
-        "Let me analyze this policy question and provide you with the appropriate guidance. This involves understanding the regulatory landscape and best practices in policy implementation.",
-        "This is an important policy consideration. Here's what the current framework suggests: policies should be clear, consistent, and aligned with organizational objectives while meeting regulatory requirements.",
-        "I understand your policy inquiry. Let me provide some insights based on best practices: effective policies should be well-documented, regularly reviewed, and communicated clearly to all stakeholders.",
-        "That's a great policy question! Let me break down the key considerations: policy development should involve stakeholder input, risk assessment, and clear implementation guidelines.",
-        "From a policy perspective, this involves several important factors to consider: compliance requirements, organizational impact, stakeholder needs, and implementation feasibility.",
-        "I can help you navigate this policy matter. Here's what you should know: policies should be designed to achieve specific objectives while maintaining flexibility for future changes.",
-        "This policy question requires careful analysis. Let me share some relevant information: successful policy implementation depends on clear communication, training, and ongoing monitoring.",
-        "I understand you're looking for policy guidance. Here's what I can tell you: policies should be regularly evaluated for effectiveness and updated as needed to reflect changing circumstances.",
-        "This is an interesting policy challenge. Let me provide some context and recommendations: focus on clarity, consistency, and stakeholder engagement throughout the policy lifecycle."
-    ]
-    # Simple keyword-based response selection
-    user_lower = user_message.lower()
-    if any(word in user_lower for word in ['gdpr', 'data protection', 'privacy']):
-        return "Regarding data protection and privacy policies, organizations must ensure compliance with relevant regulations like GDPR. This includes implementing appropriate technical and organizational measures, conducting regular audits, and maintaining clear documentation of data processing activities."
-    elif any(word in user_lower for word in ['compliance', 'regulatory', 'regulation']):
-        return "Compliance policies should establish clear frameworks for meeting regulatory requirements. This includes regular monitoring, reporting mechanisms, and training programs to ensure all stakeholders understand their responsibilities."
-    elif any(word in user_lower for word in ['security', 'cybersecurity', 'information security']):
-        return "Information security policies should address data protection, access controls, incident response procedures, and regular security assessments. These policies are crucial for protecting organizational assets and maintaining stakeholder trust."
-    else:
-        return policy_responses[len(user_message) % len(policy_responses)]
-
 def get_ai_response(user_message, user_profile=None):
     """Get response from Gemini API with retry logic"""
     try:
-        logger.info(f"Generating AI response for message: {user_message[:100]}...")
+        logger.info(f"Generating AI response for message: {user_message[:20]}...")
         logger.info(f"User profile provided: {bool(user_profile)}")
         
-        profile_context = ""
+        # Create system prompt
+        system_prompt = """You are PolicyPal, an AI-powered government scheme assistant for Indian citizens.
+        Your role is to provide specific information about government schemes and policies.
+        
+        When responding about schemes, always include:
+        1. Scheme name and description
+        2. Eligibility criteria
+        3. Benefits offered
+        4. How to apply
+        5. Required documents
+        6. Important deadlines
+        7. Official website or contact information
+        """
+        
+        # Add user profile context if available
         if user_profile:
             profile_context = f"""
-            User Profile Information:
-            - Age: {user_profile.get('age', 'Not specified')}
-            - Location: {user_profile.get('location', 'Not specified')}
-            - Employment Status: {user_profile.get('employment', 'Not specified')}
-            - Annual Income: {user_profile.get('income', 'Not specified')}
-            - Education Level: {user_profile.get('education', 'Not specified')}
-            - Family Size: {user_profile.get('familySize', 'Not specified')}
-            
-            Please consider this user profile information when providing recommendations for government schemes and policies.
+            Consider this user profile:
+            - Age: {user_profile.get('age')}
+            - Employment: {user_profile.get('employment')}
+            - Education: {user_profile.get('education')}
+            - Income: {user_profile.get('income')}
+            - Family Size: {user_profile.get('familySize')}
             """
-            logger.info("Added profile context to prompt")
-
-        system_prompt = f"""You are PolicyPal, an AI-powered government scheme and policy assistant for Indian citizens. Your role is to provide accurate, helpful information about government schemes, especially focusing on education, financial aid, and welfare programs.
-
-        {profile_context}
-
-        Important Guidelines:
-        1. Focus on providing SPECIFIC government schemes and policies that match the user's needs
-        2. Always include eligibility criteria and benefits for each scheme
-        3. Provide step-by-step application process
-        4. Include links to official websites or portals where available
-        5. Mention required documents for applications
-        6. Explain any financial benefits, scholarships, or subsidies in detail
-
-        For education-related queries, always check and mention:
-        - Scholarships (Central and State)
-        - Education Loans
-        - Merit-based schemes
-        - Special category benefits
-        - Skill development programs
-        - Research fellowships
-
-        Format your response in a clear, structured way:
-        1. Relevant Schemes (with brief descriptions)
-        2. Eligibility Criteria
-        3. Benefits Offered
-        4. Application Process
-        5. Required Documents
-        6. Important Deadlines (if any)
-        7. Additional Resources
-
-        User's question: """
+            system_prompt += profile_context
         
-        full_prompt = system_prompt + user_message
+        # Add user message
+        full_prompt = f"{system_prompt}\n\nUser Query: {user_message}"
+        
         logger.info("Sending request to Gemini API")
         response = model.generate_content(full_prompt)
         
@@ -124,30 +85,22 @@ def get_ai_response(user_message, user_profile=None):
             raise Exception("Invalid response received from API")
             
         logger.info("Successfully received valid response from Gemini API")
-        logger.info(f"Response length: {len(response.text)}")
-        
         return response.text
+        
     except Exception as e:
         logger.error(f"Error in Gemini API call: {str(e)}")
-        if "429" in str(e):  # Rate limit error
-            retry_seconds = 60
-            if "retry_delay" in str(e):
-                try:
-                    retry_seconds = int(str(e).split("seconds:")[1].split("}")[0].strip())
-                except:
-                    pass
-            logger.info(f"Rate limit exceeded. Waiting {retry_seconds} seconds...")
-            time.sleep(retry_seconds)
-            try:
-                response = model.generate_content(full_prompt)
-                return response.text
-            except Exception as retry_error:
-                logger.error(f"Error after retry: {retry_error}")
-                return generate_fallback_response(user_message)
-        logger.error(f"Error getting AI response: {e}")
         return generate_fallback_response(user_message)
 
-# In-memory storage for demo purposes. In production, use a proper database
+def generate_fallback_response(user_message):
+    """Generate fallback responses when API fails"""
+    responses = [
+        "Based on policy guidelines, I can help you understand relevant government schemes and policies. Please provide more details about your specific needs.",
+        "Let me assist you with finding appropriate government schemes. Could you please specify your requirements more clearly?",
+        "I can help you navigate various government policies and schemes. What specific assistance are you looking for?",
+    ]
+    return responses[hash(user_message) % len(responses)]
+
+# User profiles storage
 user_profiles = {}
 
 @app.route('/api/profile', methods=['POST'])
@@ -158,11 +111,10 @@ def update_profile():
         user_id = data.get('userId')
         profile_data = {
             'age': data.get('age'),
-            'location': data.get('location'),
-            'employment': data.get('employment'),
-            'income': data.get('income'),
-            'education': data.get('education'),
-            'familySize': data.get('familySize')
+            'gender': data.get('gender'),
+            'occupation': data.get('occupation'),
+            'financialStatus': data.get('financialStatus'),
+            'primaryNeeds': data.get('primaryNeeds'),
         }
         user_profiles[user_id] = profile_data
         return jsonify({'message': 'Profile updated successfully'})
@@ -189,20 +141,19 @@ def chat():
         
         if not user_message:
             return jsonify({'error': 'Message is required'}), 400
-
-        # Get user profile if available
+            
         user_profile = user_profiles.get(user_id)
         ai_response = get_ai_response(user_message, user_profile)
+        
         return jsonify({
             'response': ai_response,
-            'model': 'gemini-1.5-flash'
+            'model': 'gemini-1.5-pro'
         })
 
     except Exception as e:
         logger.error(f"Unexpected error: {e}")
-        fallback_response = generate_fallback_response(user_message)
         return jsonify({
-            'response': fallback_response,
+            'response': generate_fallback_response(user_message),
             'model': 'fallback'
         }), 500
 
@@ -211,8 +162,7 @@ def health_check():
     """Health check endpoint"""
     return jsonify({
         'status': 'healthy',
-        'message': 'PolicyPal API is running',
-        'model': 'gemini-1.5-flash'
+        'message': 'PolicyPal API is running'
     })
 
 if __name__ == '__main__':
