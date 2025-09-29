@@ -17,8 +17,26 @@ logger = logging.getLogger(__name__)
 # Configure Gemini API
 genai.configure(api_key="AIzaSyBR99HbxdtTNSwPx4m2YkOuKe3zFmFxOdM")
 
-# Initialize Gemini model
-model = genai.GenerativeModel("gemini-1.5-flash")
+# Initialize Gemini model with generation config
+generation_config = {
+    "temperature": 0.7,
+    "top_p": 0.8,
+    "top_k": 40,
+    "max_output_tokens": 2048,
+}
+
+safety_settings = [
+    {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
+    {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
+    {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
+    {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
+]
+
+model = genai.GenerativeModel(
+    model_name="gemini-1.5-pro",
+    generation_config=generation_config,
+    safety_settings=safety_settings
+)
 
 def generate_fallback_response(user_message):
     """Generate fallback responses when OpenAI quota is exceeded"""
@@ -48,6 +66,9 @@ def generate_fallback_response(user_message):
 def get_ai_response(user_message, user_profile=None):
     """Get response from Gemini API with retry logic"""
     try:
+        logger.info(f"Generating AI response for message: {user_message[:100]}...")
+        logger.info(f"User profile provided: {bool(user_profile)}")
+        
         profile_context = ""
         if user_profile:
             profile_context = f"""
@@ -58,28 +79,56 @@ def get_ai_response(user_message, user_profile=None):
             - Annual Income: {user_profile.get('income', 'Not specified')}
             - Education Level: {user_profile.get('education', 'Not specified')}
             - Family Size: {user_profile.get('familySize', 'Not specified')}
+            
+            Please consider this user profile information when providing recommendations for government schemes and policies.
             """
+            logger.info("Added profile context to prompt")
 
-        system_prompt = f"""You are PolicyPal, an AI-powered government scheme and policy assistant. You help users discover 
-        and understand various government schemes, benefits, and policies based on their profile and needs. 
-        Focus on suggesting relevant government schemes, financial aid, educational support, healthcare benefits, 
-        and other public welfare programs.
+        system_prompt = f"""You are PolicyPal, an AI-powered government scheme and policy assistant for Indian citizens. Your role is to provide accurate, helpful information about government schemes, especially focusing on education, financial aid, and welfare programs.
 
         {profile_context}
 
-        Your task is to:
-        1. Understand the user's needs and circumstances
-        2. Suggest relevant government schemes and policies
-        3. Explain eligibility criteria and benefits
-        4. Provide application process information
-        5. Offer practical guidance on accessing these benefits
+        Important Guidelines:
+        1. Focus on providing SPECIFIC government schemes and policies that match the user's needs
+        2. Always include eligibility criteria and benefits for each scheme
+        3. Provide step-by-step application process
+        4. Include links to official websites or portals where available
+        5. Mention required documents for applications
+        6. Explain any financial benefits, scholarships, or subsidies in detail
+
+        For education-related queries, always check and mention:
+        - Scholarships (Central and State)
+        - Education Loans
+        - Merit-based schemes
+        - Special category benefits
+        - Skill development programs
+        - Research fellowships
+
+        Format your response in a clear, structured way:
+        1. Relevant Schemes (with brief descriptions)
+        2. Eligibility Criteria
+        3. Benefits Offered
+        4. Application Process
+        5. Required Documents
+        6. Important Deadlines (if any)
+        7. Additional Resources
 
         User's question: """
         
         full_prompt = system_prompt + user_message
+        logger.info("Sending request to Gemini API")
         response = model.generate_content(full_prompt)
+        
+        if not response.text or len(response.text.strip()) < 50:
+            logger.error("Received empty or too short response from API")
+            raise Exception("Invalid response received from API")
+            
+        logger.info("Successfully received valid response from Gemini API")
+        logger.info(f"Response length: {len(response.text)}")
+        
         return response.text
     except Exception as e:
+        logger.error(f"Error in Gemini API call: {str(e)}")
         if "429" in str(e):  # Rate limit error
             retry_seconds = 60
             if "retry_delay" in str(e):
@@ -135,6 +184,9 @@ def chat():
         user_message = data.get('message', '')
         user_id = data.get('userId', '')
         
+        logger.info(f"Received chat request from user {user_id}")
+        logger.info(f"Message content length: {len(user_message)}")
+        
         if not user_message:
             return jsonify({'error': 'Message is required'}), 400
 
@@ -166,6 +218,3 @@ def health_check():
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(debug=True, host='0.0.0.0', port=port)
-
-if __name__ == "__main__":
-    main()
